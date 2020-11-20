@@ -6,6 +6,7 @@ import numpy as np
 
 class Agent:
     def __init__(self):
+        self.random_rate = 0.15
         self.vote_num = 7
         self.opp_move = ''
         self.bot_move = ''
@@ -42,7 +43,7 @@ class Agent:
     def update_history(self, opp_action, step):
         opp_action = str(opp_action)
         for i in range(self.number_of_predictors):
-            self.predictor_score[i] *= 0.95
+            self.predictor_score[i] *= 0.9
 
             if opp_action == self.predictors[i]:
                 # win, get prediction!
@@ -84,7 +85,7 @@ class Agent:
         self.predictors[self.base_predictor_len * index + 3] = self.beat[self.bot_move[dna_len + rfind_i]]
 
     def all_update(self, step):
-        limit = min([step, 15])
+        limit = min([step, 10])
         for i in range(self.base_predictor_len):
             self.update_predictor(i, limit, step)
 
@@ -101,15 +102,16 @@ class Agent:
         self.all_update(step)
 
         # select
-        threshold = sorted(self.predictor_score)[-self.vote_num]
-        vote = {'0': 0, '1': 0, '2': 0}
-        for s, p in zip(self.predictor_score, self.predictors):
-            if s >= threshold:
-                vote[p] += s
-        # print(vote)
-        # print(max(vote, key=vote.get))
-        # self.move = self.beat[self.predictors[self.predictor_score.index(max(self.predictor_score))]]
-        self.move = self.beat[max(vote, key=vote.get)]
+        if self.random_rate < random.random():
+            threshold = sorted(self.predictor_score)[-self.vote_num]
+            vote = {'0': 0, '1': 0, '2': 0}
+            for s, p in zip(self.predictor_score, self.predictors):
+                if s >= threshold:
+                    vote[p] += s
+
+            self.move = self.beat[max(vote, key=vote.get)]
+        else:
+            self.move = random.choice(['0', '1', '2'])
         return self.move
 
 
