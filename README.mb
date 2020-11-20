@@ -1,0 +1,26 @@
+### Contest
+
+https://www.kaggle.com/c/rock-paper-scissors/overview/environment-rules
+
+### refer:
+
+https://daniel.lawrence.lu/programming/rps/
+
+https://web.archive.org/web/20201110113735/http://www.rpscontest.com/authorSearch?name=dllu
+
+### Thinking
+
+Generate n policy, try to find the best policy when playing.
+
+If i th policy is helpful, let the policy score up.
+
+```
+agent.py
+```
+
+evaluate agent
+
+```
+python3 main.py
+```
+
