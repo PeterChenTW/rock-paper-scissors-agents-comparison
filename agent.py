@@ -1,7 +1,8 @@
 # generate n policy
-
+from collections import Counter
 import random
 import numpy as np
+
 
 class Agent:
     def __init__(self):
@@ -18,8 +19,14 @@ class Agent:
                     '10': 'c', '21': 'c', '02': 'c',
                     '00': 'a', '11': 'a', '22': 'a'}
         # fellow up
-        self.predictor_len = 4
-        self.number_of_predictors = self.predictor_len * 4 * 3
+        self.base_predictor_len = 4
+
+        self.stat_bot = Stat()
+        self.stat_move = None
+        self.opp_bot = OPP()
+        self.opp_bot_move = None
+        self.ensemble_predictors_len = 3
+        self.number_of_predictors = (self.base_predictor_len * 4 + self.ensemble_predictors_len) * 3
 
         # init predictors
         self.predictors = [random.choice(['0', '1', '2']) for _ in range(self.number_of_predictors)]
@@ -31,7 +38,7 @@ class Agent:
 
         self.move = random.choice(['0', '1', '2'])
 
-    def update_history(self, opp_action):
+    def update_history(self, opp_action, step):
         opp_action = str(opp_action)
         for i in range(self.number_of_predictors):
             self.predictor_score[i] *= 0.9
@@ -51,6 +58,8 @@ class Agent:
         self.bot_move += self.move
         self.history_DNA += self.nuclease[opp_action + self.move]
         self.history_DNA_2 += self.wlt[opp_action + self.move]
+        self.stat_move = str(self.stat_bot.statistical_prediction_agent(step, int(opp_action)))
+        self.opp_bot_move = str(self.opp_bot.transition_agent(step, int(opp_action)))
 
     def update_predictor(self, index, dna_len, step):
         if index == 0:
@@ -67,19 +76,25 @@ class Agent:
             dna_len -= 1
 
         find_i = target.find(target[step - dna_len:step], 0, step - 1)
-        self.predictors[self.predictor_len*index+0] = self.opp_move[dna_len + find_i]
-        self.predictors[self.predictor_len*index+1] = self.beat[self.bot_move[dna_len + find_i]]
+        self.predictors[self.base_predictor_len * index + 0] = self.opp_move[dna_len + find_i]
+        self.predictors[self.base_predictor_len * index + 1] = self.beat[self.bot_move[dna_len + find_i]]
         rfind_i = target.rfind(target[step - dna_len:step], 0, step - 1)
-        self.predictors[self.predictor_len*index+2] = self.opp_move[dna_len + rfind_i]
-        self.predictors[self.predictor_len*index+3] = self.beat[self.bot_move[dna_len + rfind_i]]
+        self.predictors[self.base_predictor_len * index + 2] = self.opp_move[dna_len + rfind_i]
+        self.predictors[self.base_predictor_len * index + 3] = self.beat[self.bot_move[dna_len + rfind_i]]
 
     def all_update(self, step):
         limit = min([step, 15])
-        for i in range(self.predictor_len):
+        for i in range(self.base_predictor_len):
             self.update_predictor(i, limit, step)
-        # other
-        for i in range(self.predictor_len*4, self.number_of_predictors):
-            self.predictors[i] = self.beaten[self.predictors[i - self.predictor_len*4]]
+
+        # ensemble
+        self.predictors[self.base_predictor_len * 4] = self.stat_move
+        self.predictors[self.base_predictor_len * 4 + 1] = self.opp_bot_move
+        self.predictors[self.base_predictor_len * 4 + 2] = '0'
+
+        # guess my action
+        for i in range(self.base_predictor_len * 4 + self.ensemble_predictors_len, self.number_of_predictors):
+            self.predictors[i] = self.beaten[self.predictors[i - self.base_predictor_len * 4]]
 
     def action(self, step):
         self.all_update(step)
@@ -97,6 +112,82 @@ class Agent:
         return self.move
 
 
+# ensemble
+
+
+class Stat:
+    # Create a small amount of starting history
+    history = {
+        "guess": [0, 1, 2],
+        "prediction": [0, 1, 2],
+        "expected": [0, 1, 2],
+        "action": [0, 1, 2],
+        "opponent": [0, 1],
+    }
+
+    def statistical_prediction_agent(self, step, opp_action):
+        actions = list(range(3))  # [0,1,2]
+        last_action = self.history['action'][-1]
+        opponent_action = opp_action if step > 0 else 2
+
+        self.history['opponent'].append(opponent_action)
+
+        # Make weighted random guess based on the complete move history, weighted towards relative moves based on our last action
+        move_frequency = Counter(self.history['opponent'])
+        response_frequency = Counter(zip(self.history['action'], self.history['opponent']))
+        move_weights = [move_frequency.get(n, 1) + response_frequency.get((last_action, n), 1) for n in
+                        range(3)]
+        guess = random.choices(population=actions, weights=move_weights, k=1)[0]
+
+        # Compare our guess to how our opponent actually played
+        guess_frequency = Counter(zip(self.history['guess'], self.history['opponent']))
+        guess_weights = [guess_frequency.get((guess, n), 1) for n in range(3)]
+        prediction = random.choices(population=actions, weights=guess_weights, k=1)[0]
+
+        # Repeat, but based on how many times our prediction was correct
+        prediction_frequency = Counter(zip(self.history['prediction'], self.history['opponent']))
+        prediction_weights = [prediction_frequency.get((prediction, n), 1) for n in range(3)]
+        expected = random.choices(population=actions, weights=prediction_weights, k=1)[0]
+
+        # Play the +1 counter move
+        action = (expected + 1) % 3
+
+        # Persist state
+        self.history['guess'].append(guess)
+        self.history['prediction'].append(prediction)
+        self.history['expected'].append(expected)
+        self.history['action'].append(action)
+
+        return action
+
+
+class OPP:
+    T = np.zeros((3, 3))
+    P = np.zeros((3, 3))
+
+    # a1 is the action of the opponent 1 step ago
+    # a2 is the action of the opponent 2 steps ago
+    a1, a2 = None, None
+
+    def transition_agent(self, step, opp_action):
+        if step > 1:
+            a1 = opp_action
+            self.T[self.a2, a1] += 1
+            P = np.divide(self.T, np.maximum(1, self.T.sum(axis=1)).reshape(-1, 1))
+            a2 = a1
+            if np.sum(P[a1, :]) == 1:
+                return int((np.random.choice(
+                    [0, 1, 2],
+                    p=P[a1, :]
+                ) + 1) % 3)
+            else:
+                return int(np.random.randint(3))
+        else:
+            if step == 1:
+                self.a2 = opp_action
+            return int(np.random.randint(3))
+
+
 bot = Agent()
 
 
@@ -104,7 +195,7 @@ def work(observation, configuration):
     if observation.step == 0:
         move = bot.move
     else:
-        bot.update_history(str(observation.lastOpponentAction))
+        bot.update_history(str(observation.lastOpponentAction), observation.step)
         move = bot.action(observation.step)
 
     return int(move)
@@ -137,7 +228,7 @@ def work(observation, configuration):
 #         if i == 0:
 #             p1_move = bot.move
 #         else:
-#             bot.update_history(str(env.last_move))
+#             bot.update_history(str(env.last_move), env.step)
 #             p1_move = bot.action(env.step)
 #         p2_move = RandomBot()
 #

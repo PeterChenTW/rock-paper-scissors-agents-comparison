@@ -13,7 +13,7 @@ list_names = [
     "nash_equilibrium",
     "markov_agent",
     "memory_patterns",
-    "multi_armed_bandit",
+    # "multi_armed_bandit",
     "opponent_transition_matrix",
     "decision_tree_classifier",
     "statistical_prediction",
