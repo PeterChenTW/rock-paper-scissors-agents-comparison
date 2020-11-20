@@ -6,6 +6,7 @@ import numpy as np
 
 class Agent:
     def __init__(self):
+        self.vote_num = 7
         self.opp_move = ''
         self.bot_move = ''
         self.history_DNA = ''
@@ -41,7 +42,7 @@ class Agent:
     def update_history(self, opp_action, step):
         opp_action = str(opp_action)
         for i in range(self.number_of_predictors):
-            self.predictor_score[i] *= 0.9
+            self.predictor_score[i] *= 0.95
 
             if opp_action == self.predictors[i]:
                 # win, get prediction!
@@ -100,7 +101,7 @@ class Agent:
         self.all_update(step)
 
         # select
-        threshold = sorted(self.predictor_score)[-5]
+        threshold = sorted(self.predictor_score)[-self.vote_num]
         vote = {'0': 0, '1': 0, '2': 0}
         for s, p in zip(self.predictor_score, self.predictors):
             if s >= threshold:
