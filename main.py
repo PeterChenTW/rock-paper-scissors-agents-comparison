@@ -4,14 +4,14 @@ import pandas as pd
 
 
 list_names = [
-    "hit_the_last_own_action",
-    "copy_opponent",
-    "reactionary",
-    "counter_reactionary",
-    "statistical",
-    "nash_equilibrium",
-    "markov_agent",
-    "memory_patterns",
+    # "hit_the_last_own_action",
+    # "copy_opponent",
+    # "reactionary",
+    # "counter_reactionary",
+    # "statistical",
+    # "nash_equilibrium",
+    # "markov_agent",
+    # "memory_patterns",
     # "multi_armed_bandit",
     "opponent_transition_matrix",
     "decision_tree_classifier",
@@ -28,7 +28,13 @@ for i in range(simulation_times):
             ["agent.py", list_agents[ind_agent_1]],
             configuration={"episodeSteps": 1000}
         )
-        scores[ind_agent_1, i] = current_score[0][0]
+        if current_score[0][0] >= 20:
+            add_score = 1
+        elif current_score[0][0] <= -20:
+            add_score = -1
+        else:
+            add_score = 0
+        scores[ind_agent_1, i] = add_score
 
 df_scores = pd.DataFrame(scores)
 df_scores.index = list_names
