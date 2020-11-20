@@ -1,8 +1,7 @@
 from kaggle_environments import evaluate
 import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
-import seaborn as sns
+
 
 list_names = [
     "hit_the_last_own_action",

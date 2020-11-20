@@ -56,10 +56,14 @@ class Agent:
                 self.predictor_score[i] -= 1
             else:
                 # tie
-                if self.so_far_score > 25:
-                    self.predictor_score[i] += 0.5
-                elif self.so_far_score < -25:
-                    self.predictor_score[i] -= 0.5
+                if abs(self.so_far_score) < 25:
+                    tie_score = 0
+                elif abs(self.so_far_score) < 50:
+                    tie_score = self.so_far_score / 50
+                else:
+                    tie_score = self.so_far_score/abs(self.so_far_score)
+                self.predictor_score[i] += tie_score
+
 
         # History matching
         self.opp_move += opp_action
