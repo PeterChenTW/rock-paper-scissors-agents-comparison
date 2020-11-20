@@ -5,14 +5,14 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 
 list_names = [
-    # "hit_the_last_own_action",
-    # "copy_opponent",
-    # "reactionary",
-    # "counter_reactionary",
-    # "statistical",
+    "hit_the_last_own_action",
+    "copy_opponent",
+    "reactionary",
+    "counter_reactionary",
+    "statistical",
     "nash_equilibrium",
-    # "markov_agent",
-    # "memory_patterns",
+    "markov_agent",
+    "memory_patterns",
     # "multi_armed_bandit",
     "opponent_transition_matrix",
     "decision_tree_classifier",

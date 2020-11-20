@@ -6,6 +6,7 @@ import numpy as np
 
 class Agent:
     def __init__(self):
+        self.so_far_score = 0
         self.random_rate = 0.15
         self.vote_num = 7
         self.opp_move = ''
@@ -47,13 +48,18 @@ class Agent:
 
             if opp_action == self.predictors[i]:
                 # win, get prediction!
+                self.so_far_score += 1
                 self.predictor_score[i] += 1
             elif opp_action == self.beaten[self.predictors[i]]:
                 # lose
+                self.so_far_score -= 1
                 self.predictor_score[i] -= 1
             else:
                 # tie
-                self.predictor_score[i] -= 0.5
+                if self.so_far_score > 25:
+                    self.predictor_score[i] += 0.5
+                elif self.so_far_score < -25:
+                    self.predictor_score[i] -= 0.5
 
         # History matching
         self.opp_move += opp_action
